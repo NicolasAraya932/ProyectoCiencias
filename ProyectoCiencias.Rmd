@@ -1,0 +1,25 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+## One Big Data Set with all
+```{r}
+
+anger_train <- fread("Train/anger-ratings-0to1.train.txt")
+fear_train <- fread("Train/fear-ratings-0to1.train.txt")
+joy_train <- fread("Train/joy-ratings-0to1.train.txt")
+sadness_train <- fread("Train/sadness-ratings-0to1.train.txt")
+
+```
+
+```{r}
+
+anger_test <- fread("Train/Test/NoIntensity/anger-ratings-0to1.test.target.txt")
+fear_test <- fread("Train/Test/NoIntensity/fear-ratings-0to1.test.target.txt")
+joy_test <- fread("Train/Test/NoIntensity/joy-ratings-0to1.test.target.txt")
+sadness_test <- fread("Train/Test/NoIntensity/sadness-ratings-0to1.test.target.txt")
+
+```
+
