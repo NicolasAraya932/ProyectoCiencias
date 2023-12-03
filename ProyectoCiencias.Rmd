@@ -1,25 +1,77 @@
 ---
-title: "R Notebook"
+title: "Proyecto Ciencias"
 output: html_notebook
 ---
 
+```{r}
+library(dtplyr)
+library(data.table)
+```
 
 ## One Big Data Set with all
 ```{r}
-
-anger_train <- fread("Train/anger-ratings-0to1.train.txt")
-fear_train <- fread("Train/fear-ratings-0to1.train.txt")
-joy_train <- fread("Train/joy-ratings-0to1.train.txt")
-sadness_train <- fread("Train/sadness-ratings-0to1.train.txt")
+df <- fread("detecting-offensive-language-in-tweets-master/labeled_tweets.csv")
+df2 <- fread("detecting-offensive-language-in-tweets-master/public_data_labeled.csv")
 
 ```
 
 ```{r}
 
-anger_test <- fread("Train/Test/NoIntensity/anger-ratings-0to1.test.target.txt")
-fear_test <- fread("Train/Test/NoIntensity/fear-ratings-0to1.test.target.txt")
-joy_test <- fread("Train/Test/NoIntensity/joy-ratings-0to1.test.target.txt")
-sadness_test <- fread("Train/Test/NoIntensity/sadness-ratings-0to1.test.target.txt")
+print(colnames(df))
+print(colnames(df2))
+
+```
+```{r}
+df <- subset(df, select = -c(id))
+df <- na.omit(df)
+df <- cbind(df, df2)
+```
+
+
+
+```{r}
+df
+```
+
+```{r}
+library(caret)
+library(keras)
+library(tokenizers)
+library(tensorflow)
+
+# Dividir el conjunto de datos
+set.seed(42)
+index <- createDataPartition(df$label, p = 0.8, list = FALSE)
+train_data <- df[index, ]
+test_data <- df[-index, ]
+# Tokenización y padding
+max_len <- max(nchar(train_data$full_text))
+tokenizer <- text_tokenizer()
+fit_text_tokenizer(tokenizer, train_data$full_text)
+X_train_seq <- texts_to_sequences(tokenizer, train_data$full_text)
+X_test_seq <- texts_to_sequences(tokenizer, test_data$full_text)
+X_train_pad <- pad_sequences(X_train_seq, maxlen = max_len)
+X_test_pad <- pad_sequences(X_test_seq, maxlen = max_len)
+
+# Construir el modelo
+embedding_dim <- 50
+model <- keras_model_sequential() %>%
+  layer_embedding(input_dim = length(tokenizer$word_index) + 1, output_dim = embedding_dim, input_length = max_len) %>%
+  layer_lstm(units = 1000) %>%
+  layer_dense(units = 1, activation = 'sigmoid')
+
+compile(model, optimizer = 'adam', loss = 'binary_crossentropy', metrics = c('accuracy'))
+
+# Entrenar el modelo
+if (file.exists("pesos_modelo.h5")) {
+  load_model_weights_hdf5(model, "pesos_modelo.h5")
+}
+history <- fit(model, X_train_pad, train_data$label, epochs = 5, batch_size = 32, validation_data = list(X_test_pad, test_data$label))
+
+# Evaluar el modelo
+val_loss <- tail(history$metrics$val_loss, 1)
+metrics <- evaluate(model, X_test_pad, test_data$label)
+cat("Loss:", metrics$loss, "Accuracy:", metrics$acc, "\n")
 
 ```
 
